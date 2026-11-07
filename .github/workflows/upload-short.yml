@@ -2,8 +2,9 @@ name: Upload YouTube Short
 
 on:
   schedule:
-  - cron: '0 6 * * *'
-  - cron: '0 16 * * *'
+    - cron: '0 6 * * *'   # ۹:۳۰ صبح تهران
+    - cron: '0 12 * * *'  # ۱۵:۳۰
+    - cron: '0 17 * * *'  # ۲۰:۳۰
   workflow_dispatch:
 
 jobs:

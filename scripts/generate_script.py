@@ -17,6 +17,9 @@ NICHES = [
     "AI tools for writing",
     "best AI tools for beginners",
     "AI tools that feel like magic",
+    "AI tools for video editing",
+    "AI tools for freelancers",
+    "hidden AI tools nobody talks about",
 ]
 
 BACKGROUNDS = [
@@ -38,14 +41,36 @@ COLOR_THEMES = [
     "tech_green",
 ]
 
+USED_TOPICS_FILE = "used_topics.json"
+
+def load_used_topics():
+    if os.path.exists(USED_TOPICS_FILE):
+        with open(USED_TOPICS_FILE) as f:
+            return set(json.load(f))
+    return set()
+
+def save_used_topic(niche):
+    used = load_used_topics()
+    used.add(niche)
+    with open(USED_TOPICS_FILE, "w") as f:
+        json.dump(list(used), f, indent=2)
+
 def generate_script():
     api_key = os.environ.get("GROQ_API_KEY")
     if not api_key:
         raise ValueError("GROQ_API_KEY is not set in environment variables")
-    
+
     client = Groq(api_key=api_key)
 
-    niche = random.choice(NICHES)
+    used = load_used_topics()
+    available = [n for n in NICHES if n not in used]
+
+    if not available:
+        # Reset if all used
+        available = NICHES.copy()
+        used = set()
+
+    niche = random.choice(available)
     background = random.choice(BACKGROUNDS)
     color_theme = random.choice(COLOR_THEMES)
     slot = "morning" if datetime.now().hour < 12 else "evening"
@@ -77,7 +102,7 @@ def generate_script():
     )
 
     response = client.chat.completions.create(
-        model="openai/gpt-oss-120b",
+        model="openai/gpt-oss-20b",
         messages=[{"role": "user", "content": prompt}],
         max_tokens=1000,
         temperature=0.85,
@@ -85,9 +110,7 @@ def generate_script():
 
     raw = response.choices[0].message.content.strip()
 
-    # Clean markdown code blocks if present
     if "```" in raw:
-        # Extract content between first ``` and last ```
         parts = raw.split("```")
         if len(parts) >= 2:
             raw = parts[1]
@@ -95,7 +118,6 @@ def generate_script():
                 raw = raw[4:]
             raw = raw.strip()
 
-    # Remove any leftover text before first { and after last }
     start = raw.find("{")
     end = raw.rfind("}")
     if start != -1 and end != -1 and end > start:
@@ -114,8 +136,14 @@ def generate_script():
     script["niche"] = niche
     script["generated_at"] = datetime.utcnow().isoformat()
 
+    # Mark topic as used
+    save_used_topic(niche)
+
     with open("script.json", "w") as f:
         json.dump(script, f, indent=2)
 
     print("[OK] Script generated: " + script["title"])
     return script
+
+if __name__ == "__main__":
+    generate_script()

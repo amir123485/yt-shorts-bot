@@ -39,7 +39,10 @@ COLOR_THEMES = [
 ]
 
 def generate_script():
-    api_key = "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"
+    api_key = os.environ.get("GROQ_API_KEY")
+    if not api_key:
+        raise ValueError("GROQ_API_KEY is not set in environment variables")
+    
     client = Groq(api_key=api_key)
 
     niche = random.choice(NICHES)
@@ -97,6 +100,3 @@ def generate_script():
 
     print("[OK] Script generated: " + script["title"])
     return script
-
-if __name__ == "__main__":
-    generate_script()

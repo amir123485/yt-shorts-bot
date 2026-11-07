@@ -85,13 +85,32 @@ def generate_script():
 
     raw = response.choices[0].message.content.strip()
 
-    if raw.startswith("```"):
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
+    # Clean markdown code blocks if present
+    if "```" in raw:
+        # Extract content between first ``` and last ```
+        parts = raw.split("```")
+        if len(parts) >= 2:
+            raw = parts[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+            raw = raw.strip()
+
+    # Remove any leftover text before first { and after last }
+    start = raw.find("{")
+    end = raw.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        raw = raw[start:end+1]
+
     raw = raw.strip()
 
-    script = json.loads(raw)
+    try:
+        script = json.loads(raw)
+    except json.JSONDecodeError as e:
+        print("[ERROR] Failed to parse JSON from model.")
+        print("[DEBUG] Raw response:")
+        print(raw[:1500])
+        raise e
+
     script["niche"] = niche
     script["generated_at"] = datetime.utcnow().isoformat()
 
